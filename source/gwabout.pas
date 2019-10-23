@@ -52,6 +52,15 @@ uses
   LCLIntf, Types,
   gwDataModule;
 
+const
+  URL_FPC = 'https://www.freepascal.org/';
+  URL_Lazarus = 'https://www.lazarus-ide.org/';
+  URL_Icons8 = 'http://www.icons8.com';
+  URL_FlatIcon_Monkik = 'https://www.flaticon.com/authors/monkik';
+  URL_NASA_GISS = 'https://data.giss.nasa.gov/gistemp/';
+  URL_DWD = 'https://www.dwd.de/EN/climate_environment/cdc/cdc_node.html';
+
+
 { TAboutForm }
 
 procedure TAboutForm.FormCreate(Sender: TObject);
@@ -63,22 +72,31 @@ begin
   end;
   MainDatamodule.Logos.Resolution[32].GetIcon(0, imgNASA.Picture.Icon);
   MainDatamodule.Logos.Resolution[32].GetIcon(1, imgDWD.Picture.Icon);
+
+  lblFPC.Hint := URL_FPC;
+  lblLazarus.Hint := URL_Lazarus;
+  lblIcons8.Hint := URL_Icons8;
+  lblFlatIcon.Hint := URL_FlatIcon_Monkik;
+  lblNASA.Hint := URL_NASA_GISS;
+  lblDWD.Hint := URL_DWD;
+  imgNASA.Hint := URL_NASA_GISS;
+  imgDWD.Hint := URL_DWD;
 end;
 
 procedure TAboutForm.LabelClick(Sender: TObject);
 begin
   if Sender = lblFPC then
-    OpenURL('https://www.freepascal.org/')
+    OpenURL(URL_FPC)
   else if Sender = lblLazarus then
-    OpenURL('https://www.lazarus-ide.org/')
+    OpenURL(URL_Lazarus)
   else if Sender = lblIcons8 then
-    OpenURL('http://www.icons8.com')
+    OpenURL(URL_Icons8)
   else if (Sender = lblNASA) or (Sender = imgNASA) then
-    OpenURL('https://data.giss.nasa.gov/gistemp/')
+    OpenURL(URL_NASA_GISS)
   else if (Sender = lblDWD) or (Sender = imgDWD) then
-    OpenURL('https://www.dwd.de/EN/climate_environment/cdc/cdc_node.html')
+    OpenURL(URL_DWD)
   else if Sender = lblFlatIcon then
-    OpenURL('https://www.flaticon.com/authors/monkik');
+    OpenURL(URL_FlatIcon_Monkik);
 end;
 
 procedure TAboutForm.LabelMouseEnter(Sender: TObject);

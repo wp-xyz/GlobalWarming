@@ -1,15 +1,16 @@
 object AboutForm: TAboutForm
   Left = 340
-  Height = 356
+  Height = 413
   Top = 132
-  Width = 523
+  Width = 437
   AutoSize = True
   BorderStyle = bsDialog
   Caption = 'About GW'
-  ClientHeight = 356
-  ClientWidth = 523
+  ClientHeight = 413
+  ClientWidth = 437
   OnCreate = FormCreate
   Position = poScreenCenter
+  ShowHint = True
   LCLVersion = '2.1.0.0'
   object AppImage: TImage
     AnchorSideLeft.Control = Owner
