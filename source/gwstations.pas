@@ -27,6 +27,7 @@ type
     function GetCountry: String; virtual;
     function GetDataFileName: String; virtual;
     function GetDataURL: String; virtual;
+    function GetGridColCount: Integer; virtual;
     function GetLegendTitle: String; virtual;
     procedure LoadDataFromCache(AFileName: String);
     procedure ProcessData(AStream: TStream); virtual;
@@ -34,7 +35,7 @@ type
     constructor Create(const AName, AID: String); virtual;
     destructor Destroy; override;
     procedure Assign(ASource: TStation); virtual;
-    procedure CreateSeries(AChart: TChart; AOverlaySeries: Boolean; AItems: Integer);
+    procedure CreateSeries(AChart: TChart; AOverlaySeries: Boolean; AItems: Integer); virtual;
     function Info: String;
     procedure LoadData;
     function NiceStationName: String; virtual;
@@ -259,15 +260,15 @@ var
   y: Double;
   dataItem: TDataItem;
 begin
-  if FSeriesItems and PI_MONTH <> 0 then
-    dataItem := Data[AIndex div 12]
-  else
+  if FSeriesItems and PI_MONTH_ITEMS <> 0 then
+  begin
+    dataItem := Data[AIndex div 12];
+    AItem.X := dataItem.Year + frac(AIndex/12);
+  end else
+  begin
     dataItem := Data[AIndex];
-
-  if FSeriesItems and PI_MONTH <> 0 then
-    AItem.X := dataItem.Year + frac(AIndex/12)
-  else
     AItem.X := dataItem.Year;
+  end;
 
   idx := 0;
   if FSeriesItems and PI_MET_ANNUAL <> 0 then
@@ -339,6 +340,11 @@ begin
   Result := '';
 end;
 
+function TStation.GetGridColCount: Integer;
+begin
+  Result := 19;
+end;
+
 function TStation.GetLegendTitle: String;
 begin
   Result := NiceStationName;
@@ -401,7 +407,7 @@ var
   dataItem: TDataItem;
   value: Double;
 begin
-  AGrid.ColCount := 19;
+  AGrid.ColCount := GetGridColCount;
   AGrid.RowCount := Data.Count + AGrid.FixedRows;
 
   AGrid.Cells[0, 0] := 'Year';

@@ -31,7 +31,10 @@ type
 
 function CreateIni: TCustomIniFile;
 function DownloadFile(const URL: String; AStream: TStream): Boolean;
+
 function GetSeriesColor(AChart: TChart): TColor;
+function SeriesCountPerAxis(AChart: TChart; AAxisIndexY: Integer): Integer;
+
 function IsErrorValue(AValue: Double): Boolean;
 function PadAtLeft(const AString: String; ALength: Integer): String;
 function StrToDbl(AText: String): Double;
@@ -46,7 +49,8 @@ uses
   {$IFDEF SYNAPSE}
   ssl_openssl, httpsend,
   {$ENDIF}
-  Math;
+  Math,
+  TACustomSeries, TAEnumerators;
 
 
 { TStreamUnzipper }
@@ -197,9 +201,19 @@ begin
   Result := COLORS[AChart.SeriesCount mod NUM_COLORS];
 end;
 
+function SeriesCountPerAxis(AChart: TChart; AAxisIndexY: Integer): Integer;
+var
+  i: Integer;
+  ser: TCustomChartSeries;
+begin
+  Result := 0;
+  for ser in CustomSeries(AChart) do
+    if ser.AxisIndexY = AAxisIndexY then inc(Result);
+end;
+
 function IsErrorValue(AValue: Double): Boolean;
 begin
-  Result := (AValue <= -999.0) or (AValue >= 999.0);
+  Result := IsNaN(AValue) or (AValue <= -999.0) or (AValue >= 999.0);
 end;
 
 function PadAtLeft(const AString: String; ALength: Integer): String;

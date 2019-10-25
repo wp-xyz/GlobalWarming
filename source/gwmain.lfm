@@ -31,6 +31,8 @@ object MainForm: TMainForm
           item
             Grid.Color = clSilver
             Grid.Style = psSolid
+            Grid.Visible = False
+            AxisPen.Visible = True
             Marks.LabelBrush.Style = bsClear
             Minors = <>
             Title.LabelFont.Height = -16
@@ -39,6 +41,7 @@ object MainForm: TMainForm
             Title.Visible = True
             Title.Caption = 'Temperature, C'
             Title.LabelBrush.Style = bsClear
+            Transformations = TemperatureTransformations
           end        
           item
             Grid.Color = clSilver
@@ -46,9 +49,38 @@ object MainForm: TMainForm
             Intervals.MaxLength = 100
             Intervals.MinLength = 30
             Alignment = calBottom
+            AxisPen.Visible = True
             Marks.LabelBrush.Style = bsClear
             Minors = <>
             Title.LabelBrush.Style = bsClear
+          end        
+          item
+            Grid.Visible = False
+            Visible = False
+            AxisPen.Visible = True
+            Marks.LabelBrush.Style = bsClear
+            Minors = <>
+            Title.LabelFont.Height = -16
+            Title.LabelFont.Orientation = 900
+            Title.LabelFont.Style = [fsBold]
+            Title.Visible = True
+            Title.Caption = 'Sun shine hours per month'
+            Title.LabelBrush.Style = bsClear
+            Transformations = SunshineHoursTransformations
+          end        
+          item
+            Grid.Visible = False
+            Visible = False
+            AxisPen.Visible = True
+            Marks.LabelBrush.Style = bsClear
+            Minors = <>
+            Title.LabelFont.Height = -16
+            Title.LabelFont.Orientation = 900
+            Title.LabelFont.Style = [fsBold]
+            Title.Visible = True
+            Title.Caption = 'Precipitation, mm'
+            Title.LabelBrush.Style = bsClear
+            Transformations = PrecipitationsTransformations
           end>
         BackColor = clWhite
         Foot.Brush.Color = clBtnFace
@@ -321,10 +353,10 @@ object MainForm: TMainForm
       Height = 550
       Top = 1
       Width = 239
-      ActivePage = pgGISS
+      ActivePage = pgDWD
       Align = alClient
       Images = Logos
-      TabIndex = 0
+      TabIndex = 1
       TabOrder = 1
       OnChange = DataSource_PageControlChange
       object pgGISS: TTabSheet
@@ -472,14 +504,14 @@ object MainForm: TMainForm
       end
       object pgDWD: TTabSheet
         Caption = 'DWD'
-        ClientHeight = 507
-        ClientWidth = 223
+        ClientHeight = 515
+        ClientWidth = 231
         ImageIndex = 1
         object DWD_TreeView: TTreeView
           Left = 0
-          Height = 307
+          Height = 258
           Top = 31
-          Width = 223
+          Width = 231
           Align = alClient
           BorderSpacing.Top = 4
           Images = ImageList
@@ -490,20 +522,20 @@ object MainForm: TMainForm
         end
         object Panel2: TPanel
           Left = 0
-          Height = 169
-          Top = 338
-          Width = 223
+          Height = 226
+          Top = 289
+          Width = 231
           Align = alBottom
           AutoSize = True
           BevelOuter = bvNone
-          ClientHeight = 169
-          ClientWidth = 223
+          ClientHeight = 226
+          ClientWidth = 231
           TabOrder = 1
           object cgDWD_PlotData: TCheckGroup
             Left = 0
-            Height = 165
+            Height = 222
             Top = 4
-            Width = 219
+            Width = 227
             Align = alClient
             AutoFill = False
             BorderSpacing.Top = 4
@@ -515,8 +547,8 @@ object MainForm: TMainForm
             ChildSizing.ShrinkVertical = crsScaleChilds
             ChildSizing.Layout = cclLeftToRightThenTopToBottom
             ChildSizing.ControlsPerLine = 1
-            ClientHeight = 145
-            ClientWidth = 215
+            ClientHeight = 202
+            ClientWidth = 223
             Items.Strings = (
               'Annual average (Jan-Dec)'
               'Annual average (Dec-Nov)'
@@ -525,10 +557,13 @@ object MainForm: TMainForm
               'Sommer average'
               'Fall average'
               'Monthly averages'
+              'Total sunshine hours per month'
+              'Total precipitation (mm) per month'
+              'Max daily precipitation (mm) per month'
             )
             TabOrder = 0
             Data = {
-              0700000003020202020202
+              0A00000003020202020202020202
             }
           end
         end
@@ -536,13 +571,13 @@ object MainForm: TMainForm
           Left = 0
           Height = 23
           Top = 4
-          Width = 223
+          Width = 231
           Align = alTop
           AutoSize = True
           BorderSpacing.Top = 4
           BevelOuter = bvNone
           ClientHeight = 23
-          ClientWidth = 223
+          ClientWidth = 231
           TabOrder = 2
           object Label7: TLabel
             AnchorSideLeft.Control = DWD_SearchPanel
@@ -564,7 +599,7 @@ object MainForm: TMainForm
             Left = 43
             Height = 23
             Top = 0
-            Width = 180
+            Width = 188
             Anchors = [akTop, akLeft, akRight]
             BorderSpacing.Left = 8
             ItemHeight = 15
@@ -1017,5 +1052,23 @@ object MainForm: TMainForm
     DateTimeStepFormat.MonthFormat = 'mmm/yyyy'
     left = 406
     top = 343
+  end
+  object TemperatureTransformations: TChartAxisTransformations
+    left = 941
+    top = 90
+    object TemperatureTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform
+    end
+  end
+  object SunshineHoursTransformations: TChartAxisTransformations
+    left = 943
+    top = 148
+    object SunshineHoursTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform
+    end
+  end
+  object PrecipitationsTransformations: TChartAxisTransformations
+    left = 942
+    top = 216
+    object PrecipitationsTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform
+    end
   end
 end

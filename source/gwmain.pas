@@ -8,7 +8,7 @@ uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ComCtrls, StdCtrls,
   ExtCtrls, Grids, Buttons, Types, TAGraph, TASeries, TACustomSeries, TASources,
   TACustomSource, TAChartListbox, TATools, TAStyles, TAFuncSeries, TADataTools,
-  TADrawUtils, TAIntervalSources,
+  TADrawUtils, TAIntervalSources, TATransformations,
   gwDeutscherWetterDienst, gwNASA;
 
 type
@@ -19,6 +19,12 @@ type
     Button1: TButton;
     cgDWD_PlotData: TCheckGroup;
     Chart: TChart;
+    TemperatureTransformations: TChartAxisTransformations;
+    TemperatureTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform;
+    SunshineHoursTransformations: TChartAxisTransformations;
+    SunshineHoursTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform;
+    PrecipitationsTransformations: TChartAxisTransformations;
+    PrecipitationsTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform;
     cmbDWD_Search: TComboBox;
     cmbGISS_Search: TComboBox;
     DateTimeIntervalChartSource: TDateTimeIntervalChartSource;
