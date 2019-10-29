@@ -176,7 +176,7 @@ begin
   if PI_MONTH and TStation(ser.Tag).SeriesItems <> 0 then
     dateStr := FormatDateTime('mmm/yyyy', x)
   else
-    dateStr := FormatDateTime('yyyy', x);
+    dateStr := Format('%.0f', [x]);
   if (ASender.YIndex > -1) then
   begin
     if ser.Styles <> nil then
