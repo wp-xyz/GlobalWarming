@@ -1,12 +1,12 @@
 object AboutForm: TAboutForm
   Left = 340
-  Height = 413
+  Height = 476
   Top = 132
   Width = 437
   AutoSize = True
   BorderStyle = bsDialog
   Caption = 'About GW'
-  ClientHeight = 413
+  ClientHeight = 476
   ClientWidth = 437
   OnCreate = FormCreate
   Position = poScreenCenter
@@ -59,7 +59,7 @@ object AboutForm: TAboutForm
     AnchorSideRight.Control = lblTitle
     AnchorSideRight.Side = asrBottom
     Left = 12
-    Height = 168
+    Height = 202
     Top = 183
     Width = 389
     Anchors = [akTop, akLeft, akRight]
@@ -67,7 +67,7 @@ object AboutForm: TAboutForm
     BorderSpacing.Top = 4
     BevelOuter = bvNone
     BorderStyle = bsSingle
-    ClientHeight = 164
+    ClientHeight = 198
     ClientWidth = 385
     Color = clWindow
     ParentColor = False
@@ -284,8 +284,39 @@ object AboutForm: TAboutForm
       Top = 124
       Width = 32
       BorderSpacing.Top = 2
-      BorderSpacing.Bottom = 8
       OnClick = LabelClick
+    end
+    object imgPAGES2k: TImage
+      AnchorSideLeft.Control = imgNASA
+      AnchorSideTop.Control = imgDWD
+      AnchorSideTop.Side = asrBottom
+      Left = 122
+      Height = 32
+      Top = 158
+      Width = 32
+      BorderSpacing.Top = 2
+      BorderSpacing.Bottom = 8
+    end
+    object lblPAGES2k: TLabel
+      AnchorSideLeft.Control = lblNASA
+      AnchorSideTop.Control = imgPAGES2k
+      AnchorSideRight.Control = Panel1
+      AnchorSideRight.Side = asrBottom
+      Cursor = crHandPoint
+      Left = 162
+      Height = 30
+      Top = 158
+      Width = 223
+      Anchors = [akTop, akLeft, akRight]
+      BorderSpacing.Bottom = 8
+      Caption = 'PAGES'#13#10'(Past Global Changes)'
+      Font.Color = clBlue
+      ParentColor = False
+      ParentFont = False
+      WordWrap = True
+      OnClick = LabelClick
+      OnMouseEnter = LabelMouseEnter
+      OnMouseLeave = LabelMouseLeave
     end
   end
   object BitBtn1: TBitBtn
@@ -295,7 +326,7 @@ object AboutForm: TAboutForm
     AnchorSideRight.Side = asrBottom
     Left = 346
     Height = 25
-    Top = 359
+    Top = 393
     Width = 55
     Anchors = [akTop, akRight]
     AutoSize = True

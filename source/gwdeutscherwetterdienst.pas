@@ -30,16 +30,15 @@ type
     procedure GetChartDataItemHandler_DWD(ASource: TUserDefinedChartSource;
       AIndex: Integer; var AItem: TChartDataItem);
   protected
-    procedure CreateSeries(AChart: TChart; AOverlaySeries: Boolean;
-      AItems: Integer); override;
     procedure DownloadData; override;
     function GetDataFileName: String; override;
     function GetDataURL: String; override;
-    function GetGridColCount: Integer; override;
     function GetLegendTitle: String; override;
     procedure ProcessData(AStream: TStream); override;
     procedure ReadDir(ADirURL: String; AList: TStrings);
   public
+    procedure CreateSeries(AChart: TChart; AOverlaySeries: Boolean;
+      AItems: Integer); override;
     function GetCountry: String; override;
     procedure PopulateGrid(AGrid: TStringGrid); override;
     property EndDate: TDate read FEndDate;
@@ -61,10 +60,9 @@ implementation
 
 uses
   LConvEncoding, Math, DateUtils, LazFileUtils,
-  StrUtils, FastHtmlParser,
-  Dialogs,
+  StrUtils, Dialogs,
   TATypes, TALegend, TASTyles, TACustomSeries, TASeries, TAEnumerators,
-  gwGlobal, gwUtils;
+  gwGlobal, gwUtils, gwHTMLUtils;
 
 const
   DWD_STATION_SEPARATOR = ';';
@@ -79,160 +77,6 @@ const
   DWD_DATA_URL = 'https://opendata.dwd.de/climate_environment/CDC/observations_germany/climate/monthly/kl/historical/monatswerte_KL_%s_%s_%s_hist.zip';
   DWD_DATA_FILE_MASK = 'produkt_klima_monat_%s_%s_%s.txt';
   DWD_CACHE_FILE_MASK = 'climate_mon_%s_%s.txt';
-
-
-{ TTableExtractor }
-
-type
-  TTableExtractor = class
-  private
-    FParser: THtmlParser;
-    FInTable: Boolean;
-    FInRow: Boolean;
-    FInCell: Boolean;
-    FLines: TStrings;
-    FLine: TStrings;
-    FCellText: String;
-    procedure FoundTagHandler(NoCaseTag, ActualTag: String);
-    procedure FoundTextHandler(AText: String);
-  public
-    procedure Process(AStream: TStream; ALines: TStrings);
-    property Lines: TStrings read FLines;
-  end;
-
-procedure TTableExtractor.FoundTagHandler(NoCaseTag, ActualTag: string);
-begin
-  if Length(NoCaseTag) < 4 then
-    exit;
-  case NoCaseTag[2] of
-    'T': if Pos('<TABLE', NoCaseTag) = 1 then
-           // <table> - begin of table --> set flag to activate processing
-           FInTable := true
-         else
-         if (NoCaseTag[3] in ['R']) then
-         begin
-           // <tr> - begin of row --> clear FLine list
-           inc(FInRow);
-           FLine.Clear;
-         end else
-         if (NoCaseTag[3] in ['D','H']) and (NoCaseTag[4] in [' ', '>']) then
-         begin
-           // <tc>, <th> (not <thead>) --> begin of cell --> reset storage for collected cell text
-           inc(FInCell);
-           FCellText := '';
-         end;
-    '/': if pos('</TABLE', NoCaseTag) = 1 then
-           // </table> - end of table --> ignore anything outside the table
-           FInTable := false
-         else if (NoCaseTag[3] = 'T') then
-         begin
-           if (NoCaseTag[4] in ['R']) then begin
-             // </tr> - end of row tag --> copy add FLine to lines list
-             dec(FInRow);
-             FLines.Add(FLine.DelimitedText);
-           end else
-           if (NoCaseTag[4] in ['D', 'H']) then
-             // </td>, </th> - end of cell node --> write collected texts to FLine
-             FLine.Add(FCellText);
-         end;
-  end;
-end;
-
-procedure TTableExtractor.FoundTextHandler(AText: String);
-begin
-  if FInTable and FInRow and FInCell then
-    // append all texts when inside a cell
-    FCellText := FCellText + AText;
-end;
-
-procedure TTableExtractor.Process(AStream: TStream; ALines: TStrings);
-var
-  parser: THtmlParser;
-  srcStream: TMemoryStream;
-begin
-  if AStream is TMemoryStream then
-    srcStream := TMemoryStream(AStream)
-  else
-  begin
-    srcStream := TMemoryStream.Create;
-    srcStream.CopyFrom(AStream, AStream.Size);
-  end;
-
-  try
-    FLines := ALines;
-    FLines.Clear;
-
-    FLine := TStringList.Create;
-    try
-      FLine.Delimiter := DWD_STATION_SEPARATOR;
-      FLine.StrictDelimiter := true;
-
-      srcStream.Position := 0;
-      parser := THTMLParser.Create(srcStream.Memory);
-      try
-        parser.OnFoundTag := @FoundTagHandler;
-        parser.OnFoundText := @FoundTextHandler;
-        parser.Exec;
-      finally
-        parser.Free;
-      end;
-    finally
-      FLine.Free;
-    end;
-  finally
-    if not (AStream is TMemoryStream) then
-      srcStream.Free;
-  end;
-end;
-
-
-{ TTextExtractor }
-type
-  TTextExtractor = class
-  private
-    FParser: THtmlParser;
-    FLines: TStrings;
-    procedure FoundTextHandler(AText: String);
-  public
-    procedure Process(AStream: TStream; ALines: TStrings);
-    property Lines: TStrings read FLines;
-  end;
-
-procedure TTextExtractor.FoundTextHandler(AText: String);
-begin
-  FLines.Add(AText);
-end;
-
-procedure TTextExtractor.Process(AStream: TStream; ALines: TStrings);
-var
-  parser: THtmlParser;
-  srcStream: TMemoryStream;
-begin
-  if AStream is TMemoryStream then
-    srcStream := TMemoryStream(AStream)
-  else
-  begin
-    srcStream := TMemoryStream.Create;
-    srcStream.CopyFrom(AStream, AStream.Size);
-  end;
-
-  try
-    FLines := ALines;
-    FLines.Clear;
-
-    srcStream.Position := 0;
-    parser := THTMLParser.Create(srcStream.Memory);
-    try
-      parser.OnFoundText := @FoundTextHandler;
-      parser.Exec;
-    finally
-      parser.Free;
-    end;
-  finally
-    if not (AStream is TMemoryStream) then
-      srcStream.Free;
-  end;
-end;
 
 
 { TDWD_Station }
@@ -283,6 +127,8 @@ var
   ser: TCustomChartSeries;
   n: Integer;
 begin
+  inherited;
+  (*
   // Single series only --> erase existing series and their chart sources.
   if not AOverlaySeries then
   begin
@@ -298,6 +144,7 @@ begin
     AChart.ClearSeries;
     AChart.Legend.Visible := false;
   end;
+  *)
 
   AItems := Max(AItems, 1);
   FSeriesItems := AItems;
@@ -665,11 +512,6 @@ begin
     Format(DWD_CACHE_FILE_MASK, [ID, StringReplace(Name,'/', '-', [rfReplaceAll])]);
 end;
 
-function TDWD_Station.GetGridColCount: Integer;
-begin
-  Result := inherited + 3*12;
-end;
-
 function TDWD_Station.GetLegendTitle: String;
 begin
   Result := NiceStationName + ' (DWD)';
@@ -682,10 +524,7 @@ var
   i, j, r: Integer;
   value: Double;
 begin
-  inherited;
-
-  {
-  AGrid.ColCount := GetGridColCount;
+  AGrid.ColCount := 55;
   AGrid.RowCount := Data.Count + AGrid.FixedRows;
 
   AGrid.Cells[0, 0] := 'Year';
@@ -707,7 +546,6 @@ begin
   AGrid.Cells[16, 0] := 'Fall' + LineEnding + 'SON';
   AGrid.Cells[17, 0] := 'Annual' + LineEnding + 'Jan-Dec';
   AGrid.Cells[18, 0] := 'Annual' + LineEnding + 'Dec-Nov';
-  }
   AGrid.Cells[19, 0] := 'Sunshine Hrs' + LineEnding + 'Jan';
   AGrid.Cells[20, 0] := 'Sunshine Hrs' + LineEnding + 'Feb';
   AGrid.Cells[21, 0] := 'Sunshine Hrs' + LineEnding + 'Mar';
@@ -746,14 +584,20 @@ begin
   AGrid.Cells[54, 0] := 'Max Precip/Day' + LineEnding + 'Dec';
 
   AGrid.Canvas.Font.Assign(AGrid.Font);
+  AGrid.DefaultColWidth := Max(AGrid.Canvas.TextWidth(' -999.9 '), AGrid.Canvas.TextWidth('  July  '));;
+  AGrid.RowHeights[0] := (AGrid.Canvas.TextHeight('Tg') + varCellPadding) * 2;
+  AGrid.ColWidths[13] := AGrid.Canvas.TextWidth('  Summer  ');
+  AGrid.ColWidths[14] := AGrid.ColWidths[13];
+  AGrid.ColWidths[15] := AGrid.ColWidths[13];
+  AGrid.ColWidths[16] := AGrid.ColWidths[13];
+  AGrid.ColWidths[17] := Max(AGrid.Canvas.TextWidth('Annual'), AGrid.Canvas.TextWidth('Dec-Nov')) + 2*varCellPadding;
+  AGrid.ColWidths[18] := AGrid.ColWidths[17];
   AGrid.ColWidths[19] := AGrid.Canvas.TextWidth(' Sunshine Hrs ');
   for m := mFeb to mDec do
     AGrid.ColWidths[19 + ord(m)] := AGrid.ColWidths[19];
-
   AGrid.ColWidths[31] := AGrid.Canvas.TextWidth(' Precip/Month ');
   for m := mFeb to mDec do
     AGrid.ColWidths[31 + ord(m)] := AGrid.ColWidths[31];
-
   AGrid.ColWidths[43] := AGrid.Canvas.TextWidth(' Max Precip/Day ');
   for m := mFeb to mDec do
     AGrid.ColWidths[43 + ord(m)] := AGrid.ColWidths[43];
@@ -762,8 +606,11 @@ begin
   begin
     dataItem := TDWD_DataItem(Data[i]);
     r := i + AGrid.FixedRows;;
+    AGrid.Cells[0, r] := IntToStr(dataItem.Year);
     for j := 1 to 12 do
     begin
+      value := dataItem.MonthlyMean[TMonth(j-1)];
+      AGrid.Cells[j, r] := IfThen(IsErrorValue(value), '', FormatFloat('0.0', value));
       value := dataItem.TotalSunshineHours[TMonth(m)];
       AGrid.Cells[j + 18, r] := IfThen(IsErrorValue(value), '', FormatFloat('0.0', value));
       value := dataItem.TotalPrecipitation[m];
@@ -771,6 +618,13 @@ begin
       value := dataItem.MaxDailyPrecipitation[m];
       AGrid.Cells[j + 42, r] := IfThen(IsErrorvalue(value), '', FormatFloat('0.0', value));
     end;
+    for j := 13 to 16 do
+    begin
+      value := dataItem.SeasonalMean[TSeason(j-13)];
+      AGrid.Cells[j, r] := IfThen(IsErrorValue(value), '', FormatFloat('0.0', value));
+    end;
+    AGrid.Cells[17, r] := IfThen(IsErrorValue(dataItem.AnnualMean), '', FormatFloat('0.0', dataitem.AnnualMean));
+    AGrid.Cells[18, r] := IfThen(IsErrorValue(dataItem.MetAnnualMean), '', FormatFloat('0.0', dataitem.MetAnnualMean));
   end;
 end;
 
@@ -967,9 +821,9 @@ begin
   TDWD_Station(Result).FState := CP1252ToUTF8(trim(lState));
   TDWD_Station(Result).FStartDate := ScanDateTime(DWD_DATE_MASK, trim(lStartDate));
   TDWD_Station(Result).FEndDate := ScanDateTime(DWD_DATE_MASK, trim(lEndDate));
-  TDWD_Station(Result).FLatitude := StrToDbl(lLatitude);
-  TDWD_Station(Result).FLongitude := StrToDbl(lLongitude);
-  TDWD_Station(Result).FElevation := StrToDbl(lElevation);
+  TDWD_Station(Result).FLatitude := PtStrToFloat(lLatitude);
+  TDWD_Station(Result).FLongitude := PtStrToFloat(lLongitude);
+  TDWD_Station(Result).FElevation := PtStrToFloat(lElevation);
 end;
 
 

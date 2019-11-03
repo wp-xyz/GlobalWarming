@@ -15,8 +15,10 @@ type
   TAboutForm = class(TForm)
     BitBtn1: TBitBtn;
     AppImage: TImage;
+    imgPAGES2k: TImage;
     imgNASA: TImage;
     imgDWD: TImage;
+    lblPAGES2k: TLabel;
     lblFlatIcon: TLabel;
     lblAppIcon: TLabel;
     lblDWD: TLabel;
@@ -59,6 +61,7 @@ const
   URL_FlatIcon_Monkik = 'https://www.flaticon.com/authors/monkik';
   URL_NASA_GISS = 'https://data.giss.nasa.gov/gistemp/';
   URL_DWD = 'https://www.dwd.de/EN/climate_environment/cdc/cdc_node.html';
+  URL_PAGES2k = 'http://pastglobalchanges.org/science/wg/2k-network/data/phase-2-data';
 
 
 { TAboutForm }
@@ -72,6 +75,7 @@ begin
   end;
   MainDatamodule.Logos.Resolution[32].GetIcon(0, imgNASA.Picture.Icon);
   MainDatamodule.Logos.Resolution[32].GetIcon(1, imgDWD.Picture.Icon);
+  MainDatamodule.Logos.Resolution[32].GetIcon(2, imgPAGES2k.Picture.Icon);
 
   lblFPC.Hint := URL_FPC;
   lblLazarus.Hint := URL_Lazarus;
@@ -79,8 +83,10 @@ begin
   lblFlatIcon.Hint := URL_FlatIcon_Monkik;
   lblNASA.Hint := URL_NASA_GISS;
   lblDWD.Hint := URL_DWD;
+  lblPAGES2k.Hint := URL_PAGES2k;
   imgNASA.Hint := URL_NASA_GISS;
   imgDWD.Hint := URL_DWD;
+  imgPAGES2k.Hint := URL_PAGES2k;
 end;
 
 procedure TAboutForm.LabelClick(Sender: TObject);
@@ -95,6 +101,8 @@ begin
     OpenURL(URL_NASA_GISS)
   else if (Sender = lblDWD) or (Sender = imgDWD) then
     OpenURL(URL_DWD)
+  else if (Sender = lblPAGES2k) or (Sender = imgPAGES2k) then
+    OpenURL(URL_PAGES2k)
   else if Sender = lblFlatIcon then
     OpenURL(URL_FlatIcon_Monkik);
 end;

@@ -9,7 +9,7 @@ uses
   ExtCtrls, Grids, Buttons, Types, TAGraph, TASeries, TACustomSeries, TASources,
   TACustomSource, TAChartListbox, TATools, TAStyles, TAFuncSeries, TADataTools,
   TADrawUtils, TAIntervalSources, TATransformations,
-  gwDeutscherWetterDienst, gwNASA;
+  gwStations, gwDeutscherWetterDienst, gwNASA, gwPages2k;
 
 type
 
@@ -17,8 +17,11 @@ type
 
   TMainForm = class(TForm)
     Button1: TButton;
+    btnShowDataFile: TButton;
     cgDWD_PlotData: TCheckGroup;
     Chart: TChart;
+    Pages2K_TreeView: TTreeView;
+    pgPages2k: TTabSheet;
     TemperatureTransformations: TChartAxisTransformations;
     TemperatureTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform;
     SunshineHoursTransformations: TChartAxisTransformations;
@@ -32,7 +35,6 @@ type
     Label7: TLabel;
     lblStationName: TLabel;
     lblGISS_Search: TLabel;
-    Logos: TImageList;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -73,6 +75,7 @@ type
     pgTable: TTabSheet;
     Splitter1: TSplitter;
     DataGrid: TStringGrid;
+    procedure btnShowDataFileClick(Sender: TObject);
     procedure Button1Click(Sender: TObject);
     procedure cbLocalFilesOnlyChange(Sender: TObject);
     procedure ChartListboxMouseUp(Sender: TObject; Button: TMouseButton;
@@ -80,29 +83,39 @@ type
     procedure CrosshairToolDraw(ASender: TDataPointDrawTool);
     procedure DataGridPrepareCanvas(Sender: TObject; ACol, ARow: Integer; AState: TGridDrawState);
     procedure DataSource_PageControlChange(Sender: TObject);
-    procedure DWD_TreeViewSelectionChanged(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure GISS_TreeViewSelectionChanged(Sender: TObject);
     procedure MeasurementToolAfterMouseUp(ATool: TChartTool; APoint: TPoint);
     procedure MeasurementToolGetDistanceText(ASender: TDataPointDistanceTool;
       var AText: String);
     procedure rgGISS_VersionClick(Sender: TObject);
     procedure SearchComboEditingDone(Sender: TObject);
     procedure SpeedButton1Click(Sender: TObject);
+
+    // Treeview clicks
+    procedure DWD_TreeViewSelectionChanged(Sender: TObject);
+    procedure GISS_TreeViewSelectionChanged(Sender: TObject);
+    procedure Pages2K_TreeViewSelectionChanged(Sender: TObject);
   private
     DWD_Stations: TDWD_StationList;
     GISSv2_Stations: TGISSv2_StationList;
     GISSv4_Stations: TGISSv4_StationList;
+    PAGES2k_Stations: TPAGES2k_StationList;
     FFitSeries: TFitSeries;
     procedure CreateFitSeries;
 
     procedure LoadDWD;
     procedure LoadGISSv2;
     procedure LoadGISSv4;
+    procedure LoadPAGES2k;
     procedure SetGISSVersion(AVersionIndex: Integer);
 
+    function CurrentTree: TTreeView;
     function FindStationNode(ATree: TTreeView; AStationName: String): TTreeNode;
+
+    procedure CloseFileViewerHandler(Sender: TObject; var CloseAction: TCloseAction);
+    procedure ShowDataFile(AStation: TStation);
+    procedure UpdateFileViewer(AStation: TStation);
 
     procedure ReadIni;
     procedure WriteIni;
@@ -120,12 +133,32 @@ implementation
 uses
   IniFiles,
   TAMath,
-  gwGlobal, gwUtils, gwAbout, gwStations;
+  gwGlobal, gwUtils, gwAbout, gwFileViewer;
 
 type
   TChartSeriesAccess = class(TChartSeries);
 
 { TMainForm }
+
+procedure TMainForm.btnShowDataFileClick(Sender: TObject);
+var
+  station: TStation;
+begin
+  if (FileViewerForm = nil) or not FileViewerForm.Showing then
+  begin
+    if CurrentTree.Selected <> nil then
+      station := TStation(CurrentTree.Selected.Data)
+    else
+      station := nil;
+    ShowDataFile(station);
+    btnShowDataFile.Caption := 'Close file viewer';
+  end else
+  if FileViewerForm <> nil then
+  begin
+    FileViewerForm.Hide;
+    btnShowDataFile.Caption := 'Show data file';
+  end;
+end;
 
 procedure TMainForm.Button1Click(Sender: TObject);
 begin
@@ -144,6 +177,19 @@ procedure TMainForm.ChartListboxMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
   MeasurementTool.Enabled := ChartListBox.ItemIndex > -1;
+end;
+
+procedure TMainForm.CloseFileViewerHandler(Sender: TObject;
+  var CloseAction: TCloseAction);
+begin
+  btnShowDataFile.Caption := 'Show data file';
+  if WindowState = wsNormal then
+  begin
+    FileViewerLeft := FileViewerForm.Left;
+    FileViewerTop := FileViewerForm.Top;
+    FileViewerWidth := FileViewerForm.Width;
+    FileViewerHeight := FileViewerForm.Height;
+  end;
 end;
 
 procedure TMainForm.CreateFitSeries;
@@ -192,6 +238,25 @@ begin
   Statusbar.SimpleText := Format('%s: %.1f°C in %s', [title, y, dateStr]);
 end;
 
+function TMainForm.CurrentTree: TTreeView;
+begin
+  if DataSource_PageControl.ActivePage = pgGISS then
+  begin
+    case rgGISS_Version.ItemIndex of
+      0: Result := GISSv2_TreeView;
+      1: Result := GISSv4_TreeView;
+      else raise Exception.Create('GISS version not handled.');
+    end;
+  end else
+  if Datasource_PageControl.ActivePage = pgDWD then
+    Result := DWD_TreeView
+  else
+  if Datasource_PageControl.ActivePage = pgPages2k then
+    Result := Pages2K_TreeView
+  else
+    raise Exception.Create('DataSource not handled.');
+end;
+
 procedure TMainForm.DataGridPrepareCanvas(Sender: TObject; ACol, ARow: Integer;
   AState: TGridDrawState);
 var
@@ -215,7 +280,17 @@ begin
       LoadDWD;
       DWD_Stations.PopulateTreeView(DWD_TreeView, cbLocalFilesOnly.Checked);
     end;
-  end;
+  end else
+  if DataSource_PageControl.ActivePage = pgPAGES2k then
+  begin
+    if PAGES2k_TreeView.Items.Count = 0 then
+    begin
+      LoadPAGES2k;
+      PAGES2k_Stations.PopulateTreeView(PAGES2k_TreeView, cbLocalFilesOnly.Checked);
+    end;
+  end else
+    raise Exception.Create('Data source ' + DataSource_PageControl.ActivePage.Caption + ' not handled.');
+
 end;
 
 procedure TMainForm.DWD_TreeViewSelectionChanged(Sender: TObject);
@@ -250,8 +325,8 @@ begin
       station.LoadData;
       if station.Data.Count > 0 then
       begin
-        tree.Selected.ImageIndex := 0;
-        tree.Selected.SelectedIndex := 0;
+        tree.Selected.ImageIndex := IMG_LOCAL_FILE;
+        tree.Selected.SelectedIndex := tree.Selected.ImageIndex;
       end;
     end;
     if station.Data.Count > 0 then
@@ -260,6 +335,7 @@ begin
       station.CreateSeries(Chart, cbOverlayCurves.Checked, items);
       lblStationName.Caption := station.NiceStationName;
       lblStationInfo.Caption := station.Info;
+      UpdateFileViewer(station);
     end;
 
     MeasurementTool.Enabled := false;
@@ -314,6 +390,7 @@ begin
   DWD_Stations.Free;
   GISSv2_Stations.Free;
   GISSv4_Stations.Free;
+  PAGES2k_Stations.Free;
 end;
 
 procedure TMainForm.GISS_TreeViewSelectionChanged(Sender: TObject);
@@ -348,8 +425,8 @@ begin
       station.LoadData;
       if station.Data.Count > 0 then
       begin
-        tree.Selected.ImageIndex := 0;
-        tree.Selected.SelectedIndex := 0;
+        tree.Selected.ImageIndex := IMG_LOCAL_FILE;
+        tree.Selected.SelectedIndex := tree.Selected.ImageIndex;
       end;
     end;
     if station.Data.Count > 0 then
@@ -361,6 +438,7 @@ begin
       else
         lblStationName.Caption := station.NiceStationName;
       lblStationInfo.Caption := station.Info;
+      UpdateFileViewer(station);
     end;
 
     MeasurementTool.Enabled := false;
@@ -414,6 +492,20 @@ begin
   end;
 end;
 
+procedure TMainForm.LoadPAGES2k;
+var
+  crs: TCursor;
+begin
+  crs := Screen.Cursor;
+  try
+    Screen.Cursor := crHourglass;
+    PAGES2k_Stations := TPAGES2k_StationList.Create;
+    PAGES2k_Stations.Load;
+  finally
+    Screen.Cursor := crs;
+  end;
+end;
+
 procedure TMainForm.MeasurementToolAfterMouseUp(ATool: TChartTool;
   APoint: TPoint);
 begin
@@ -455,6 +547,53 @@ begin
     AText := Format('Slope: %.5f °C/a', [FFitSeries.Param[1]]);
 end;
 
+procedure TMainForm.Pages2K_TreeViewSelectionChanged(Sender: TObject);
+const
+  IMG_INDEX: array[boolean] of Integer = (1, 0);
+var
+  station: TPages2k_Station;
+  i: Integer;
+  tree: TTreeView;
+  crs: TCursor;
+begin
+  tree := Sender as TTreeView;
+
+  if tree.Selected = nil then
+    exit;
+  if tree.Selected.Parent = nil then
+    exit;
+
+  crs := Screen.Cursor;
+  try
+    Screen.Cursor := crHourglass;
+    station := TPAGES2k_Station(tree.Selected.Data);
+    if station.Data.Count = 0 then
+    begin
+      station.LoadData;
+      if station.Data.Count > 0 then
+      begin
+        tree.Selected.ImageIndex := station.GetImageIndex(true);
+        tree.Selected.SelectedIndex := tree.Selected.ImageIndex;
+      end;
+    end;
+    if station.Data.Count > 0 then
+    begin
+      station.PopulateGrid(DataGrid);
+      station.CreateSeries(Chart, cbOverlayCurves.Checked, 1);
+      if station.Country <> '(other)' then
+        lblStationName.Caption := station.NiceStationName + ' (' + station.Country + ')'
+      else
+        lblStationName.Caption := station.NiceStationName;
+      lblStationInfo.Caption := station.Info;
+      UpdateFileViewer(station);
+    end;
+
+    MeasurementTool.Enabled := false;
+  finally
+    Screen.Cursor := crs;
+  end;
+end;
+
 procedure TMainForm.ReadIni;
 var
   ini: TCustomIniFile;
@@ -484,6 +623,22 @@ begin
 
     DataDir := ini.ReadString('Settings', 'DataDir', DataDir);
     cbLocalFilesOnly.Checked := ini.ReadBool('Settings', 'LocalFilesOnly', cbLocalFilesOnly.Checked);
+
+    L := ini.ReadInteger('FileViewer', 'Left', -1);
+    T := ini.ReadInteger('FileViewer', 'Top', -1);
+    W := ini.ReadInteger('FileViewer', 'Width', -1);
+    H := ini.ReadInteger('FileViewer', 'Height', -1);
+    R := Screen.WorkAreaRect;
+    if W > R.Right - R.Left then W := R.Right - R.Left;
+    if H > R.Bottom - R.Top then H := R.Bottom - R.Top;
+    if L + W > R.Right then L := R.Right - W;
+    if L < R.Left then L := R.Left;
+    if T + H > R.Bottom then T := R.Bottom - H;
+    if T < R.Top then T := R.Top;
+    FileViewerLeft := L;
+    FileViewerTop := T;
+    FileViewerWidth := W;
+    FileViewerHeight := H;
   finally
     ini.Free;
   end;
@@ -564,6 +719,24 @@ begin
     end;
 end;
 
+procedure TMainForm.ShowDataFile(AStation: TStation);
+begin
+  if FileViewerForm = nil then begin
+    FileViewerForm := TFileViewerForm.Create(Application);
+    FileViewerForm.OnClose := @CloseFileViewerHandler;
+  end;
+
+  if (FileViewerLeft = -1) or (FileViewerTop = -1) or (FileViewerWidth = -1) or (FileViewerHeight = -1) then
+    FileViewerForm.Position := poScreenCenter
+  else
+  begin
+    FileViewerForm.Position := poDesigned;
+    FileViewerForm.SetBounds(FileViewerLeft, FileViewerTop, FileViewerWidth, FileViewerHeight);
+  end;
+  FileViewerForm.Station := AStation;
+  FileViewerForm.Show;
+end;
+
 procedure TMainForm.SpeedButton1Click(Sender: TObject);
 var
   F: TAboutForm;
@@ -574,6 +747,12 @@ begin
   finally
     F.Free;
   end;
+end;
+
+procedure TMainForm.UpdateFileViewer(AStation: TStation);
+begin
+  if (FileViewerForm = nil) or (not FileViewerForm.Showing) then exit;
+  FileViewerForm.Station := AStation;
 end;
 
 procedure TMainForm.WriteIni;
@@ -598,6 +777,18 @@ begin
 
     ini.WriteBool('Settings', 'LocalFilesOnly', cbLocalFilesOnly.Checked);
     ini.WriteString('Settings', 'DataDir', DataDir);
+
+    if (FileViewerForm <> nil) and (FileViewerForm.WindowState = wsNormal) then
+    begin
+      FileViewerLeft := FileViewerForm.Left;
+      FileViewerTop := FileViewerForm.Top;
+      FileViewerWidth := FileViewerForm.Width;
+      FileViewerHeight := FileViewerForm.Height;
+    end;
+    ini.WriteInteger('FileViewer', 'Left', FileViewerLeft);
+    ini.WriteInteger('FileViewer', 'Top', FileViewerTop);
+    ini.WriteInteger('FileViewer', 'Width', FileViewerWidth);
+    ini.WriteInteger('FileViewer', 'Height', FileViewerHeight);
   finally
     ini.Free;
   end;

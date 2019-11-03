@@ -25,16 +25,18 @@ type
   TGISS_Station = class(TStation)
   private
 //    FSeriesItems: Integer;
-    procedure DownloadData; override;
     procedure GetChartDataItemHandler(ASource: TUserDefinedChartSource;
-      AIndex: Integer; var AItem: TChartDataItem);
+      AIndex: Integer; var AItem: TChartDataItem); override;
   protected
     FSuffixes: array of Byte;
+    procedure DownloadData; override;
     function FirstDataLine: Integer; virtual;
     function GetDataMask: String; virtual;
     procedure ProcessData(AStream: TStream); override;
   public
     function CalcDataURL(AKind, AIndex: Byte): String; virtual;
+    procedure CreateSeries(AChart: TChart; AOverlaySeries: Boolean; AItems: Integer); override;
+    procedure PopulateGrid(AGrid: TStringGrid); override;
   end;
 
   TGISSv2_Station = class(TGISS_Station)
@@ -126,6 +128,134 @@ begin
   Result := '';
 end;
 
+procedure TGISS_Station.CreateSeries(AChart: TChart; AOverlaySeries: Boolean;
+  AItems: Integer);
+var
+  ser: TLineSeries;
+  uds: TUserDefinedChartSource;
+  styles: TChartStyles;
+  i: Integer;
+  n: Integer;
+begin
+  inherited;  // erases existing series and their chart sources.
+  (*
+  // Single series only --> erase existing series and their chart sources.
+  if not AOverlaySeries then
+  begin
+    for i:=0 to AChart.SeriesCount-1 do
+    begin
+      if AChart.Series[i] is TLineSeries then
+      begin
+        ser := TLineSeries(AChart.Series[i]);
+        if ser.Source is TUserDefinedChartSource then
+        begin
+          uds := ser.Source as TUserDefinedChartSource;
+          uds.Free;
+        end;
+        ser.Styles.Free;
+      end;
+    end;
+    AChart.ClearSeries;
+    AChart.Legend.Visible := false;
+  end;
+    *)
+  // Determine how many "stack levels" are required
+  n := 0;
+  if AItems and PI_MET_ANNUAL <> 0 then inc(n); // Meteorological annual average
+  if AItems and PI_ANNUAL <> 0 then inc(n);     // Annual average
+  if AItems and PI_WINTER <> 0 then inc(n);     // Winter average
+  if AItems and PI_SPRING <> 0 then inc(n);     // Spring average
+  if AItems and PI_SUMMER <> 0 then inc(n);     // Sommer average
+  if AItems and PI_FALL <> 0 then inc(n);       // Fall average
+  if AItems and PI_MONTH <> 0 then inc(n);      // Monthly average
+  if n = 0 then n := 1;
+
+  // Create new series and a chart source for it.
+  uds := TUserDefinedChartSource.Create(AChart);
+  uds.YCount := n;
+  if AItems and PI_MONTH <> 0 then
+    uds.PointsNumber := Data.Count * 12    // 12 values per record!
+  else
+    uds.PointsNumber := Data.Count;
+  uds.OnGetChartDataItem := @GetChartDataItemHandler;
+  uds.Tag := PtrInt(self);
+  ser := TLineSeries.Create(AChart);
+  ser.Source := uds;
+  ser.Title := GetLegendTitle;
+  ser.LinePen.Color := GetSeriesColor(AChart);
+  ser.ShowPoints := true;
+  ser.Pointer.Brush.Color := ser.LinePen.Color;
+  ser.Pointer.Style := psCircle;
+  ser.Tag := PtrInt(self);
+
+  if n > 1 then begin
+    AChart.Legend.Visible := true;
+    ser.Legend.Multiplicity := lmStyle;
+    styles := TChartStyles.Create(AChart);
+    ser.Styles := styles;
+    if FSeriesItems and PI_MET_ANNUAL <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (annual mean/Dec-Nov)';
+        Pen.Style := psSolid;
+        Pen.Color := ser.LinePen.Color;
+        Pen.Width := 2;
+        Brush.Color := ser.Pointer.Brush.Color;
+      end;
+    if FSeriesItems and PI_ANNUAL <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (annual mean/Jan-Dec)';
+        Pen.Style := psSolid;
+        Pen.Color := ser.LinePen.Color;
+        Brush.Color := ser.Pointer.Brush.Color;
+      end;
+    if FSeriesItems and PI_WINTER <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (winter mean)';
+        Pen.Style := psDash;
+        Pen.Color := ser.LinePen.Color;
+        Brush.Color := ser.Pointer.Brush.Color;
+      end;
+    if FSeriesItems and PI_SPRING <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (spring mean)';
+        Pen.Style := psDot;
+        Pen.Color := ser.LinePen.Color;
+        Brush.Color := ser.Pointer.Brush.Color;
+      end;
+    if FSeriesItems and PI_SUMMER <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (sommer mean)';
+        Pen.Style := psDashDot;
+        Pen.Color := ser.LinePen.Color;
+        Brush.Color := ser.Pointer.Brush.Color;
+      end;
+    if FSeriesItems and PI_FALL <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (fall mean)';
+        Pen.Style := psDashDotDot;
+        Pen.Color := ser.LinePen.Color;
+        Brush.Color := ser.Pointer.Brush.Color;
+      end;
+    if FSeriesItems and PI_MONTH <> 0 then
+      with styles.Add do
+      begin
+        Text := ser.Title + ' (monthly mean)';
+        Pen.Style := psSolid;
+        Pen.Color := ser.LinePen.Color;
+        ser.Pointer.Style := psNone;
+      end;
+  end;
+
+  // Add series to chart.
+  AChart.AddSeries(ser);
+end;
+
 //https://data.giss.nasa.gov/cgi-bin/gistemp/show_station.cgi?id=614029120003&dt=1&ds=1
 //https://data.giss.nasa.gov/tmp/gistemp/STATIONS/tmp_614029120003_1_0/station.txt
 procedure TGISS_Station.DownloadData;
@@ -172,42 +302,42 @@ begin
   AItem.X := dataItem.Year;
 
   idx := 0;
-  if FSeriesItems and 1 <> 0 then
-  begin
-    y := dataItem.MetAnnualMean;
-    if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
-    inc(idx);
-  end;
-
-  if FSeriesItems and 2 <> 0 then
+  if FSeriesItems and PI_ANNUAL <> 0 then
   begin
     y := dataItem.AnnualMean;
     if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
     inc(idx);
   end;
 
-  if FSeriesItems and 4 <> 0 then
+  if FSeriesItems and PI_MET_ANNUAL <> 0 then
+  begin
+    y := dataItem.MetAnnualMean;
+    if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
+    inc(idx);
+  end;
+
+  if FSeriesItems and PI_WINTER <> 0 then
   begin
     y := dataItem.SeasonalMean[sWinter];
     if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
     inc(idx);
   end;
 
-  if FSeriesItems and 8 <> 0 then
+  if FSeriesItems and PI_SPRING <> 0 then
   begin
     y := dataItem.SeasonalMean[sSpring];
     if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
     inc(idx);
   end;
 
-  if FSeriesItems and $10 <> 0 then
+  if FSeriesItems and PI_SUMMER <> 0 then
   begin
     y := dataItem.SeasonalMean[sSummer];
     if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
     inc(idx);
   end;
 
-  if FSeriesItems and $20 <> 0 then
+  if FSeriesItems and PI_FALL <> 0 then
   begin
     y := dataItem.SeasonalMean[sFall];
     if IsErrorValue(y) then AItem.SetY(idx, NaN) else AItem.SetY(idx, y);
@@ -218,6 +348,65 @@ end;
 function TGISS_Station.GetDataMask: String;
 begin
   // to be overridden by ancestors
+end;
+
+procedure TGISS_Station.PopulateGrid(AGrid: TStringGrid);
+var
+  i, j, r: Integer;
+  dataItem: TGISS_DataItem;
+  value: Double;
+begin
+  AGrid.ColCount := 19;
+  AGrid.RowCount := Data.Count + AGrid.FixedRows;
+
+  AGrid.Cells[0, 0] := 'Year';
+  AGrid.Cells[1, 0] := 'Jan';
+  AGrid.Cells[2, 0] := 'Feb';
+  AGrid.Cells[3, 0] := 'Mar';
+  AGrid.Cells[4, 0] := 'Apr';
+  AGrid.Cells[5, 0] := 'May';
+  AGrid.Cells[6, 0] := 'June';
+  AGrid.Cells[7, 0] := 'July';
+  AGrid.Cells[8, 0] := 'Aug';
+  AGrid.Cells[9, 0] := 'Sep';
+  AGrid.Cells[10, 0] := 'Oct';
+  AGrid.Cells[11, 0] := 'Nov';
+  AGrid.Cells[12, 0] := 'Dec';
+  AGrid.Cells[13, 0] := 'Winter' + LineEnding + 'DJF';
+  AGrid.Cells[14, 0] := 'Spring' + LineEnding + 'MAM';
+  AGrid.Cells[15, 0] := 'Sommer' + LineEnding + 'JJA';
+  AGrid.Cells[16, 0] := 'Fall' + LineEnding + 'SON';
+  AGrid.Cells[17, 0] := 'Annual' + LineEnding + 'Jan-Dec';
+  AGrid.Cells[18, 0] := 'Annual' + LineEnding + 'Dec-Nov';
+
+  AGrid.Canvas.Font.Assign(AGrid.Font);
+  AGrid.DefaultColWidth := Max(AGrid.Canvas.TextWidth(' -999.9 '), AGrid.Canvas.TextWidth('  July  '));;
+  AGrid.ColWidths[13] := AGrid.Canvas.TextWidth('  Sommer  ');
+  AGrid.ColWidths[14] := AGrid.ColWidths[13];
+  AGrid.ColWidths[15] := AGrid.ColWidths[13];
+  AGrid.ColWidths[16] := AGrid.ColWidths[13];
+  AGrid.ColWidths[17] := Max(AGrid.Canvas.TextWidth('Annual'), AGrid.Canvas.TextWidth('Dec-Nov')) + 2*varCellPadding;
+  AGrid.ColWidths[18] := AGrid.ColWidths[17];
+  AGrid.RowHeights[0] := (AGrid.Canvas.TextHeight('Tg') + varCellPadding) * 2;
+
+  for i := 0 to Data.Count-1 do
+  begin
+    dataItem := Data[i] as TGISS_DataItem;
+    r := i + AGrid.FixedRows;;
+    AGrid.Cells[0, r] := IntToStr(dataItem.Year);
+    for j := 1 to 12 do
+    begin
+      value := dataItem.MonthlyMean[TMonth(j-1)];
+      AGrid.Cells[j, r] := IfThen(IsErrorValue(value), '', FormatFloat('0.0', value));
+    end;
+    for j := 13 to 16 do
+    begin
+      value := dataItem.SeasonalMean[TSeason(j-13)];
+      AGrid.Cells[j, r] := IfThen(IsErrorValue(value), '', FormatFloat('0.0', value));
+    end;
+    AGrid.Cells[17, r] := IfThen(IsErrorValue(dataItem.AnnualMean), '', FormatFloat('0.0', dataitem.AnnualMean));
+    AGrid.Cells[18, r] := IfThen(IsErrorValue(dataItem.MetAnnualMean), '', FormatFloat('0.0', dataitem.MetAnnualMean));
+  end;
 end;
 
 procedure TGISS_Station.ProcessData(AStream: TStream);
@@ -371,12 +560,20 @@ begin
     233: Result := 'Yemen';
 
     301: Result := 'Argentina';
+    302: Result := 'Bolivia';
+    303: Result := 'Brasilia';
     304: Result := 'Chile';
     305: Result := 'Colombia';
     306: Result := 'Ecuador';
+    307: Result := 'Guyana';
     308: Result := 'Paraguay';
     309: Result := 'Peru';
+    312: Result := 'Suriname';
+    313: Result := 'Uruguay';
     314: Result := 'Venezuela';
+    315: Result := 'French Guiana';
+    316: Result := 'Falkland Islands';
+    317: Result := 'South Georgia/South Sandwich Islands';
 
     401: Result := 'Barbados';
     403: Result := 'Canada';
@@ -425,7 +622,7 @@ begin
     649: Result := 'Turkey';
     651: Result := 'United Kingdom';
 
-    700: Result := 'Antarktis';
+    700: Result := 'Antarctica';
 
     else Result := '(other)';
   end;
@@ -635,9 +832,9 @@ begin
     end;
 
   station := TGISSv2_Station.Create(trim(lName), lID);
-  station.FLatitude := StrToDbl(lLat);
-  station.FLongitude := StrToDbl(lLon);
-  station.FElevation := StrToDbl(lElev);
+  station.FLatitude := PtStrToFloat(lLat);
+  station.FLongitude := PtStrToFloat(lLon);
+  station.FElevation := PtStrToFloat(lElev);
   case lPop of
     'R': station.PopulationType := ptRural;
     'S': station.PopulationType := ptSmallTown;
@@ -720,9 +917,9 @@ begin
     end;
 
   station := TGISSv4_Station.Create(trim(lName), lID);
-  station.FLatitude := StrToDbl(lLat);
-  station.FLongitude := StrToDbl(lLon);
-  station.FElevation := StrToDbl(lElev);
+  station.FLatitude := PtStrToFloat(lLat);
+  station.FLongitude := PtStrToFloat(lLon);
+  station.FElevation := PtStrToFloat(lElev);
 
   Result := station;
 end;

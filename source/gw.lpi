@@ -36,7 +36,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="10">
+    <Units Count="13">
       <Unit0>
         <Filename Value="gw.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -95,6 +95,23 @@
         <ResourceBaseClass Value="DataModule"/>
         <UnitName Value="gwDataModule"/>
       </Unit9>
+      <Unit10>
+        <Filename Value="gwpages2k.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gwPages2k"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="gwhtmlutils.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gwHTMLUtils"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="gwfileviewer.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="FileViewerForm"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="gwFileViewer"/>
+      </Unit12>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

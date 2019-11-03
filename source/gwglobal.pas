@@ -13,6 +13,7 @@ const
 
   IMG_REMOTE_FILE = -1;
   IMG_LOCAL_FILE = 0;
+  IMG_LOCAL_FILE_NO_TEMPERATURE = 1;
 
   PI_ANNUAL = 1;            // temperatures
   PI_MET_ANNUAL = 2;
@@ -40,7 +41,20 @@ const
 var
   DataDir: String = BASE_DATA_DIR;
 
+  PtFormatSettings: TFormatSettings;
+
+  FileViewerLeft: Integer = -1;
+  FileViewerTop: Integer = -1;
+  FileViewerWidth: Integer = -1;
+  FileViewerHeight: Integer = -1;
+
+
 implementation
+
+initialization
+  PtFormatSettings := DefaultFormatSettings;
+  PtFormatSettings.DecimalSeparator := '.';
+  PtFormatSettings.ThousandSeparator := ',';
 
 end.
 

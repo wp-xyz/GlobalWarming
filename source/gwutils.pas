@@ -37,7 +37,8 @@ function SeriesCountPerAxis(AChart: TChart; AAxisIndexY: Integer): Integer;
 
 function IsErrorValue(AValue: Double): Boolean;
 function PadAtLeft(const AString: String; ALength: Integer): String;
-function StrToDbl(AText: String): Double;
+
+function PtStrToFloat(AText: String): Double;
 
 
 implementation
@@ -233,7 +234,7 @@ begin
   end;
 end;
 
-function StrToDbl(AText: String): Double;
+function PtStrToFloat(AText: String): Double;
 var
   res: Integer;
 begin

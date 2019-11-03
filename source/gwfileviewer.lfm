@@ -1,0 +1,23 @@
+object FileViewerForm: TFileViewerForm
+  Left = 405
+  Height = 499
+  Top = 145
+  Width = 1269
+  Caption = 'File viewer'
+  ClientHeight = 499
+  ClientWidth = 1269
+  LCLVersion = '2.1.0.0'
+  object Memo: TMemo
+    Left = 4
+    Height = 491
+    Top = 4
+    Width = 1261
+    Align = alClient
+    BorderSpacing.Around = 4
+    Font.Height = -12
+    Font.Name = 'Courier New'
+    ParentFont = False
+    ScrollBars = ssAutoBoth
+    TabOrder = 0
+  end
+end

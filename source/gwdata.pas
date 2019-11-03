@@ -11,28 +11,48 @@ type
   TMonth = (mJan, mFeb, mMar, mApr, mMay, mJun, mJul, mAug, mSep, mOct, mNov, mDec);
   TSeason = (sWinter, sSpring, sSummer, sFall);
 
-  TDataItem = class
+  TBasicDataItem = class
   public
     Year: Integer;
     AnnualMean: Double;     // calendar mean: Jan - Dec
+    constructor Create; virtual;
+    procedure Assign(ASource: TBasicDataItem); virtual;
+  end;
+
+  TDataItem = class(TBasicDataItem)
+  public
     MetAnnualMean: Double;  // meteorological mean: Dec - Nev
     MonthlyMean: array[TMonth] of Double;
     SeasonalMean: array[TSeason] of Double;
-    constructor Create; virtual;
-    procedure Assign(ASource: TDataItem); virtual;
+    constructor Create; override;
+    procedure Assign(ASource: TBasicDataItem); override;
   end;
   TDataItemClass = class of TDataItem;
 
   TDataList = class(TFPObjectList)
   private
-    function GetItem(AIndex: Integer): TDataItem;
-    procedure SetItem(AIndex: Integer; const AValue: TDataItem);
+    function GetItem(AIndex: Integer): TBasicDataItem;
+    procedure SetItem(AIndex: Integer; const AValue: TBasicDataItem);
   public
-    property Items[AIndex: Integer]: TDataItem read GetItem write SetItem; default;
+    property Items[AIndex: Integer]: TBasicDataItem read GetItem write SetItem; default;
   end;
 
 
 implementation
+
+{ TBasicDataItem}
+
+constructor TBasicDataItem.Create;
+begin
+  inherited;
+end;
+
+procedure TBasicDataItem.Assign(ASource: TBasicDataItem);
+begin
+  Year := ASource.Year;
+  AnnualMean := ASource.AnnualMean;
+end;
+
 
 { TDataItem }
 
@@ -41,30 +61,33 @@ begin
   inherited;
 end;
 
-procedure TDataItem.Assign(ASource: TDataItem);
+procedure TDataItem.Assign(ASource: TBasicDataItem);
 var
   m: TMonth;
   s: TSeason;
 begin
-  Year := ASource.Year;
-  AnnualMean := ASource.AnnualMean;
-  for m in TMonth do
-    MonthlyMean[m] := ASource.MonthlyMean[m];
-  for s in TSeason do
-    SeasonalMean[s] := ASource.SeasonalMean[s];
+  if ASource is TDataItem then
+  begin
+    inherited;
+    for m in TMonth do
+      MonthlyMean[m] := TDataItem(ASource).MonthlyMean[m];
+    for s in TSeason do
+      SeasonalMean[s] := TDataItem(ASource).SeasonalMean[s];
+  end else
+    raise Exception.Create('Cannot assign ' + ASource.ClassName + ' to TDataItem');
 end;
 
 
 { TDataList }
 
-function TDataList.GetItem(AIndex: Integer): TDataItem;
+function TDataList.GetItem(AIndex: Integer): TBasicDataItem;
 begin
-  Result := TDataItem(inherited Items[AIndex]);
+  Result := TBasicDataItem(inherited Items[AIndex]);
 end;
 
-procedure TDataList.SetItem(AIndex: Integer; const AValue: TDataItem);
+procedure TDataList.SetItem(AIndex: Integer; const AValue: TBasicDataItem);
 begin
-  TDataItem(inherited Items[AIndex]).Assign(AValue);
+  TBasicDataItem(inherited Items[AIndex]).Assign(AValue);
 end;
 
 end.
