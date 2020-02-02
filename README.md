@@ -3,6 +3,7 @@
 Reads temperature data from weather services
 - NASA GISS (https://data.giss.nasa.gov/gistemp/)
 - Deutscher Wetterdienst (DWD, https://www.dwd.de/EN/climate_environment/cdc/cdc_node.html)
+- Pages2k project (http://pastglobalchanges.org/)
 and plots them as a function of time.
 
 OpenSSL needed (on Windows copy the DLLs libeay32.dll and ssleay32.ssl into the bin folder).
