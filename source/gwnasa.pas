@@ -165,7 +165,7 @@ begin
   if AItems and PI_ANNUAL <> 0 then inc(n);     // Annual average
   if AItems and PI_WINTER <> 0 then inc(n);     // Winter average
   if AItems and PI_SPRING <> 0 then inc(n);     // Spring average
-  if AItems and PI_SUMMER <> 0 then inc(n);     // Sommer average
+  if AItems and PI_SUMMER <> 0 then inc(n);     // Summer average
   if AItems and PI_FALL <> 0 then inc(n);       // Fall average
   if AItems and PI_MONTH <> 0 then inc(n);      // Monthly average
   if n = 0 then n := 1;
@@ -181,6 +181,7 @@ begin
   uds.Tag := PtrInt(self);
   ser := TLineSeries.Create(AChart);
   ser.Source := uds;
+  ser.AxisIndexY := AX_TEMPERATURE;
   ser.Title := GetLegendTitle;
   ser.LinePen.Color := GetSeriesColor(AChart);
   ser.ShowPoints := true;
@@ -229,7 +230,7 @@ begin
     if FSeriesItems and PI_SUMMER <> 0 then
       with styles.Add do
       begin
-        Text := ser.Title + ' (sommer mean)';
+        Text := ser.Title + ' (summer mean)';
         Pen.Style := psDashDot;
         Pen.Color := ser.LinePen.Color;
         Brush.Color := ser.Pointer.Brush.Color;
@@ -374,14 +375,14 @@ begin
   AGrid.Cells[12, 0] := 'Dec';
   AGrid.Cells[13, 0] := 'Winter' + LineEnding + 'DJF';
   AGrid.Cells[14, 0] := 'Spring' + LineEnding + 'MAM';
-  AGrid.Cells[15, 0] := 'Sommer' + LineEnding + 'JJA';
+  AGrid.Cells[15, 0] := 'Summer' + LineEnding + 'JJA';
   AGrid.Cells[16, 0] := 'Fall' + LineEnding + 'SON';
   AGrid.Cells[17, 0] := 'Annual' + LineEnding + 'Jan-Dec';
   AGrid.Cells[18, 0] := 'Annual' + LineEnding + 'Dec-Nov';
 
   AGrid.Canvas.Font.Assign(AGrid.Font);
   AGrid.DefaultColWidth := Max(AGrid.Canvas.TextWidth(' -999.9 '), AGrid.Canvas.TextWidth('  July  '));;
-  AGrid.ColWidths[13] := AGrid.Canvas.TextWidth('  Sommer  ');
+  AGrid.ColWidths[13] := AGrid.Canvas.TextWidth('  Summer  ');
   AGrid.ColWidths[14] := AGrid.ColWidths[13];
   AGrid.ColWidths[15] := AGrid.ColWidths[13];
   AGrid.ColWidths[16] := AGrid.ColWidths[13];

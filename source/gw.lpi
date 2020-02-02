@@ -26,7 +26,6 @@
     </PublishOptions>
     <RunParams>
       <FormatVersion Value="2"/>
-      <Modes Count="0"/>
     </RunParams>
     <RequiredPackages Count="2">
       <Item1>
@@ -109,6 +108,7 @@
         <Filename Value="gwfileviewer.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="FileViewerForm"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="gwFileViewer"/>
       </Unit12>

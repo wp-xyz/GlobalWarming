@@ -96,6 +96,7 @@ type
     procedure DWD_TreeViewSelectionChanged(Sender: TObject);
     procedure GISS_TreeViewSelectionChanged(Sender: TObject);
     procedure Pages2K_TreeViewSelectionChanged(Sender: TObject);
+
   private
     DWD_Stations: TDWD_StationList;
     GISSv2_Stations: TGISSv2_StationList;
@@ -137,6 +138,7 @@ uses
 
 type
   TChartSeriesAccess = class(TChartSeries);
+
 
 { TMainForm }
 
@@ -689,13 +691,15 @@ begin
       combo.Items.Delete(combo.Items.Count-1);
     combo.Text := combo.Items[idx];
     combo.SelectAll;
+    {
     if not wasSelected then
     begin
       if tree = DWD_TreeView then
         DWD_TreeViewSelectionChanged(tree)
       else
-      GISS_TreeViewSelectionChanged(tree);
+        GISS_TreeViewSelectionChanged(tree);
     end;
+    }
     exit;
   end;
 end;
