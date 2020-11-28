@@ -340,9 +340,7 @@ object MainForm: TMainForm
         Top = 0
         Width = 98
         Caption = 'Local files only'
-        Checked = True
         OnChange = cbLocalFilesOnlyChange
-        State = cbChecked
         TabOrder = 0
       end
       object cbOverlayCurves: TCheckBox
@@ -661,8 +659,8 @@ object MainForm: TMainForm
   end
   object ImageList: TImageList
     Scaled = True
-    left = 406
-    top = 191
+    Left = 406
+    Top = 191
     Bitmap = {
       4C7A0300000010000000100000006A0300000000000078DAD5934D4C53411080
       F1A637F5067282A39E087F57FE222511815641A35E0D46314A4294D7D2423111
@@ -810,8 +808,8 @@ object MainForm: TMainForm
     }
   end
   object ChartToolset: TChartToolset
-    left = 406
-    top = 272
+    Left = 406
+    Top = 272
     object ZoomDragTool: TZoomDragTool
       Shift = [ssLeft]
       Brush.Style = bsClear
@@ -840,24 +838,24 @@ object MainForm: TMainForm
     Params.MaxLength = 120
     Params.MinLength = 30
     DateTimeStepFormat.MonthFormat = 'mmm/yyyy'
-    left = 406
-    top = 343
+    Left = 406
+    Top = 343
   end
   object TemperatureTransformations: TChartAxisTransformations
-    left = 941
-    top = 88
+    Left = 941
+    Top = 88
     object TemperatureTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform
     end
   end
   object SunshineHoursTransformations: TChartAxisTransformations
-    left = 943
-    top = 148
+    Left = 943
+    Top = 148
     object SunshineHoursTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform
     end
   end
   object PrecipitationsTransformations: TChartAxisTransformations
-    left = 942
-    top = 216
+    Left = 942
+    Top = 216
     object PrecipitationsTransformationsAutoScaleAxisTransform1: TAutoScaleAxisTransform
     end
   end

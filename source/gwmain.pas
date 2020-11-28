@@ -132,6 +132,9 @@ implementation
 {$R *.lfm}
 
 uses
+  {$IF FPC_FullVersion >= 30200}
+  opensslsockets,
+  {$ENDIF}
   IniFiles,
   TAMath,
   gwGlobal, gwUtils, gwAbout, gwFileViewer;
