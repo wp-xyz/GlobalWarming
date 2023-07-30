@@ -83,6 +83,7 @@ type
     procedure CrosshairToolDraw(ASender: TDataPointDrawTool);
     procedure DataGridPrepareCanvas(Sender: TObject; ACol, ARow: Integer; AState: TGridDrawState);
     procedure DataSource_PageControlChange(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure MeasurementToolAfterMouseUp(ATool: TChartTool; APoint: TPoint);
@@ -103,6 +104,7 @@ type
     GISSv4_Stations: TGISSv4_StationList;
     PAGES2k_Stations: TPAGES2k_StationList;
     FFitSeries: TFitSeries;
+    FActivated: Boolean;
     procedure CreateFitSeries;
 
     procedure LoadDWD;
@@ -372,11 +374,17 @@ begin
   Result := nil;
 end;
 
+procedure TMainForm.FormActivate(Sender: TObject);
+begin
+  if not FActivated then
+  begin
+    FActivated := true;
+    ReadIni;
+  end;
+end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
-  ReadIni;
-
   lblStationName.Caption := '';
   lblStationInfo.Caption := '';
 

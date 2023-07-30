@@ -6,9 +6,10 @@ object MainForm: TMainForm
   Caption = 'MainForm'
   ClientHeight = 601
   ClientWidth = 1252
+  OnActivate = FormActivate
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  LCLVersion = '2.1.0.0'
+  LCLVersion = '3.99.0.0'
   object Display_PageControl: TPageControl
     Left = 266
     Height = 601
@@ -106,7 +107,6 @@ object MainForm: TMainForm
         Width = 174
         Chart = Chart
         Align = alRight
-        ItemHeight = 0
         OnMouseUp = ChartListboxMouseUp
         TabOrder = 1
       end
@@ -215,12 +215,11 @@ object MainForm: TMainForm
           AnchorSideTop.Side = asrCenter
           AnchorSideRight.Control = Panel4
           AnchorSideRight.Side = asrBottom
-          Left = 900
+          Left = 888
           Height = 25
           Top = 10
-          Width = 70
+          Width = 82
           Anchors = [akTop, akRight]
-          AutoSize = True
           Constraints.MinHeight = 25
           Caption = 'About...  '
           Images = ImageList
@@ -338,7 +337,7 @@ object MainForm: TMainForm
         Left = 0
         Height = 19
         Top = 0
-        Width = 98
+        Width = 96
         Caption = 'Local files only'
         OnChange = cbLocalFilesOnlyChange
         TabOrder = 0
@@ -350,7 +349,7 @@ object MainForm: TMainForm
         Left = 0
         Height = 19
         Top = 19
-        Width = 97
+        Width = 95
         Caption = 'Overlay curves'
         TabOrder = 1
       end
